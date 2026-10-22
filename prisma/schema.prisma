@@ -1,0 +1,165 @@
+// Prisma schema for AICTE Approval Workflow Automation & Compliance System
+// Compatible with SQLite (local demo) and PostgreSQL (production deployment)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String       @id @default(uuid())
+  email         String       @unique
+  name          String
+  role          String       // INSTITUTE_USER, RO_OFFICER, SCRUTINY_COMMITTEE, EVC_EXPERT, SHC_SAC_COMMITTEE, REGULATION_BUREAU_ADMIN
+  region        String?      // NWRO, NRO, WRO, CRO, ERO, SCRO, SRO, SWRO, HQ
+  institutionId String?
+  institution   Institution? @relation(fields: [institutionId], references: [id])
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  auditLogs     AuditLog[]
+}
+
+model Institution {
+  id              String        @id @default(uuid())
+  aictePid        String        @unique // e.g. "1-1029384751"
+  name            String
+  region          String        // NWRO, NRO, WRO, CRO, ERO, SCRO, SRO, SWRO
+  state           String
+  city            String
+  address         String
+  institutionType String        // ENGINEERING, MANAGEMENT, PHARMACY, POLYTECHNIC, ARCHITECTURE
+  nirfRank        Int?
+  nbaAccredited   Boolean       @default(false)
+  naacGrade       String?       // A++, A+, A, B++, B, NA
+  contactEmail    String
+  contactPhone    String
+  users           User[]
+  applications    Application[]
+  documents       Document[]
+  undertakings    Undertaking[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model Application {
+  id                 String         @id @default(uuid())
+  applicationNo      String         @unique // e.g. "AICTE/2026-27/APP-84920"
+  institutionId      String
+  institution        Institution    @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  academicYear       String         @default("2026-27")
+  aphTrack           String         // NEW_INSTITUTE, EOA_STANDARD, EOA_3YEAR_MERIT, INFRA_MODIFICATION
+  currentStage       String         // SUBMITTED, SCRUTINY, RE_SCRUTINY, EVC_SCHEDULED, EVC_COMPLETED, SHC_HEARING, SAC_APPEAL, APPROVED, REJECTED, EOA_GRANTED, EOA_3YEAR_GRANTED, LOA_GRANTED
+  previousStage      String?
+  terFeeStatus       String         @default("PAID") // PAID, PENDING, EXEMPTED
+  terFeeAmount       Float          @default(150000)
+  terPaymentRef      String?
+  submittedAt        DateTime       @default(now())
+  stageStartedAt     DateTime       @default(now())
+  slaDeadline        DateTime       // SLA completion target timestamp
+  slaDaysAllocated   Int            @default(7)
+  isOverdue          Boolean        @default(false)
+  ageingDays         Int            @default(0) // total days elapsed in process
+  deficiencyCount    Int            @default(0)
+  escalationLevel    Int            @default(0) // 0: Normal, 1: RO Warning, 2: HQ Escalated
+  assignedOfficer    String?
+  scrutinyRemark     String?
+  approvalDecision   String?        // PENDING, APPROVED, REJECTED, CONDITIONAL
+  documents          Document[]
+  undertakings       Undertaking[]
+  evcSchedules       EVCSchedule[]
+  auditLogs          AuditLog[]
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+}
+
+model Document {
+  id                 String       @id @default(uuid())
+  institutionId      String
+  institution        Institution  @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  applicationId      String?
+  application        Application? @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  category           String       // LEASE_DEED, FIRE_SAFETY_NOC, STRUCTURAL_STABILITY, BANK_FDR, AFFIDAVIT_2, OCCUPANCY_CERT
+  documentTitle      String
+  documentNumber     String?
+  fileUrl            String
+  issueDate          DateTime?
+  expiryDate         DateTime?
+  verificationStatus String       @default("PENDING") // PENDING, VERIFIED, DEFICIENT, EXPIRED
+  deficiencyRemarks  String?
+  verifiedBy         String?
+  verifiedAt         DateTime?
+  isExpiringSoon     Boolean      @default(false) // Triggered at T-90, T-30, T-7
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+}
+
+model Undertaking {
+  id                 String       @id @default(uuid())
+  institutionId      String
+  institution        Institution  @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  applicationId      String?
+  application        Application? @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  title              String       // e.g. "Affidavit-2: Faculty Cadre Ratio Rectification"
+  condition          String       // The clause agreed by institute
+  aphClause          String?      // e.g. "APH 2024-27 Clause 4.3(b)"
+  dueDate            DateTime
+  fulfilmentStatus   String       @default("PENDING") // PENDING, FULFILLED, OVERDUE, BREACHED
+  complianceProofUrl String?
+  escalationLevel    Int          @default(0) // 0: Normal, 1: RO Warning, 2: Show Cause Notice
+  remarks            String?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+}
+
+model EVCSchedule {
+  id                 String      @id @default(uuid())
+  applicationId      String
+  application        Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  inspectionDate     DateTime
+  mode               String      @default("PHYSICAL") // PHYSICAL, VIRTUAL, HYBRID
+  leadExpertName     String
+  expertPhone        String
+  expertEmail        String
+  status             String      @default("SCHEDULED") // SCHEDULED, IN_PROGRESS, COMPLETED, CANCELLED
+  gpsCoordinates     String?     // e.g. "13.0108,80.2355" (Lat, Long)
+  locationAddress    String?
+  reportUrl          String?
+  inspectionSummary  String?
+  deficienciesFound  String?
+  isRecommended      Boolean?
+  completedAt        DateTime?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+}
+
+model WorkflowRule {
+  id                 String   @id @default(uuid())
+  aphTrack           String   // NEW_INSTITUTE, EOA_STANDARD, EOA_3YEAR_MERIT, INFRA_MODIFICATION
+  stage              String   // SUBMITTED, SCRUTINY, RE_SCRUTINY, EVC_SCHEDULED, SHC_HEARING, SAC_APPEAL
+  slaDays            Int      // Max days allowed for this stage
+  allowedTransitions String   // JSON array string of next permissible stages e.g. '["EVC_SCHEDULED", "RE_SCRUTINY", "REJECTED"]'
+  requiresApprovalBy String   // RO_OFFICER, SCRUTINY_COMMITTEE, EVC_EXPERT, SHC_SAC_COMMITTEE, REGULATION_BUREAU_ADMIN
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model AuditLog {
+  id            String       @id @default(uuid())
+  applicationId String?
+  application   Application? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+  userId        String?
+  user          User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action        String       // STAGE_TRANSITION, DEFICIENCY_MARKED, SLA_BREACH_DETECTED, ESCALATED_TO_HQ, DOCUMENT_VERIFIED, UNDERTAKING_LOGGED
+  stageFrom     String?
+  stageTo       String?
+  actorRole     String
+  actorName     String
+  ipAddress     String       @default("127.0.0.1")
+  details       String       // Detailed change log or JSON string
+  timestamp     DateTime     @default(now())
+}

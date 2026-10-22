@@ -1,0 +1,32 @@
+# Official AICTE APH 2024-27 System Specification (PS ID: 26262)
+
+## 1. Official Regional Jurisdictions
+- North-Western (NWRO - Chandigarh)
+- Northern (NRO - Kanpur)
+- Western (WRO - Mumbai)
+- Central (CRO - Bhopal)
+- Eastern (ERO - Kolkata)
+- South-Central (SCRO - Hyderabad)
+- Southern (SRO - Chennai)
+- South-Western (SWRO - Bengaluru)
+
+## 2. Official Application Workflows (APH Routing Matrix)
+- **NEW_INSTITUTE (Chapter I - LoA):** SUBMITTED -> SCRUTINY -> [RE_SCRUTINY] -> EVC_INSPECTION -> [SHC_HEARING] -> [SAC_APPEAL] -> LOA_GRANTED
+- **EOA_STANDARD (Chapter II - Self-Disclosure):** SUBMITTED -> SCRUTINY -> EOA_GRANTED (Routes to EVC only if flagged for deficiency/undertaking breach)
+- **EOA_3YEAR_MERIT (APH 2024-27 Special):** SUBMITTED -> AUTOMATED_ELIGIBILITY_CHECK (NIRF/NBA/NAAC) -> EOA_3YEAR_GRANTED
+- **INFRA_MODIFICATION (Change of Site / Conversion):** SUBMITTED -> EVC_INSPECTION -> [SHC_HEARING] -> APPROVED
+
+## 3. Mandatory Tracked Documents & Expiry Rules
+- Registered Land Lease Deed (Track Expiry Date -> Alert at T-90, T-30, T-7 days)
+- Fire Safety NOC (Annual/Bi-annual renewal tracking)
+- Building Structural Stability & Occupancy Certificate
+- Bank FDR / Joint FDR with AICTE (Maturity date tracking)
+- Affidavit-2 (Time-bound Undertaking for faculty recruitment, lab equipment, or barrier-free access)
+
+## 4. Roles (RBAC)
+- `INSTITUTE_USER` (Permanent Institute ID - PID holder)
+- `RO_OFFICER` (Regional Officer - Manages Scrutiny & EVC scheduling per region)
+- `SCRUTINY_COMMITTEE` (Verifies documents, marks specific APH norm deficiencies)
+- `EVC_EXPERT` (Conducts physical/virtual inspection, uploads geo-tagged report)
+- `SHC_SAC_COMMITTEE` (Handles hearings, appeals, and grants conditional approvals with Undertakings)
+- `REGULATION_BUREAU_ADMIN` (AICTE HQ - National dashboard, SLA rule configuration, audit trail oversight)
